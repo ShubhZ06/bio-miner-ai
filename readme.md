@@ -92,57 +92,84 @@ Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQL
 4.  Start the database.
     
 
-### 3\. Backend Setup
+3\. Backend Setup
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   # Navigate to backend  cd backend  # Install dependencies  pip install -r requirements.txt  # Run the API Server  uvicorn main:app --reload   `
+\# Navigate to backend
 
-_You should see:_ ⚡ \[AI Engine\] Loading Models on: NVIDIA GeForce RTX...
+cd backend
 
-### 4\. Frontend Setup
+  
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   # Open a new terminal  cd frontend  # Install dependencies  npm install  # Start the React Dashboard  npm start   `
+\# Install dependencies
 
-_The app will launch at_ http://localhost:3000
+pip install -r requirements.txt
+
+  
+
+\# Run the API Server
+
+uvicorn main:app --reload
+
+You should see: ⚡ \[AI Engine\] Loading Models on: NVIDIA GeForce RTX...
+
+  
+
+4\. Frontend Setup
+
+\# Open a new terminal
+
+cd frontend
+
+  
+
+\# Install dependencies
+
+npm install
+
+  
+
+\# Start the React Dashboard
+
+npm start
+
+The app will launch at http://localhost:3000
+
+  
 
 🧪 Usage
---------
 
-1.  Open the web dashboard.
-    
-2.  Enter a viral target (e.g., **"Dengue Virus"**).
-    
-3.  Select the number of papers to scan (e.g., **50**).
-    
-4.  Click **"Start Analysis"**.
-    
-5.  Watch the logs as the GPU crunches through literature.
-    
-6.  **View Results:**
-    
-    *   **On Screen:** See a ranked list of drugs with the exact sentence context ("evidence").
-        
-    *   **In Neo4j:** Open Neo4j Browser and run MATCH (n) RETURN n to see the knowledge graph grow in real-time.
-        
+Open the web dashboard.
+
+Enter a viral target (e.g., "Dengue Virus").
+
+Select the number of papers to scan (e.g., 50).
+
+Click "Start Analysis".
+
+Watch the logs as the GPU crunches through literature.
+
+View Results:
+
+On Screen: See a ranked list of drugs with the exact sentence context ("evidence").
+
+In Neo4j: Open Neo4j Browser and run MATCH (n) RETURN n to see the knowledge graph grow in real-time.
 
 🔮 Roadmap
-----------
 
-*   \[x\] MVP: Real-time scraping & NLP Analysis
-    
-*   \[x\] GPU Acceleration & Batch Processing
-    
-*   \[x\] Knowledge Graph Integration (Neo4j)
-    
-*   \[ \] **Advanced Graph Schema:** Link Papers explicitly to authors and journals.
-    
-*   \[ \] **Frontend Graph Viz:** Implement react-force-graph for 3D network exploration in the browser.
-    
-*   \[ \] **Molecular Validation:** Integrate RDKit to validate molecular weight and druggability.
-    
+\[x\] MVP: Real-time scraping & NLP Analysis
+
+\[x\] GPU Acceleration & Batch Processing
+
+\[x\] Knowledge Graph Integration (Neo4j)
+
+\[ \] Advanced Graph Schema: Link Papers explicitly to authors and journals.
+
+\[ \] Frontend Graph Viz: Implement react-force-graph for 3D network exploration in the browser.
+
+\[ \] Molecular Validation: Integrate RDKit to validate molecular weight and druggability.
 
 📜 License
-----------
 
 Distributed under the MIT License. See LICENSE for more information.
 
-_Built with ❤️ and ☕ by \[shubham gupta,aryan yadav,om telgade\]_
+Built with ❤️ and ☕ by \[Shubham Gupta,Aryan Yadav,Om Telgade\]
