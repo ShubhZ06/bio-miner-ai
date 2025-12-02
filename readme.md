@@ -16,7 +16,7 @@
     
 3.  **Filters** findings using sentence-level context logic and molecular interaction keywords.
     
-4.  **Constructs** a Knowledge Graph (Neo4j) to visualize valid (Drug)-\[:POTENTIAL\_CANDIDATE\]->(Virus) relationships.
+4.  **Constructs** a Knowledge Graph (Neo4j) to visualize valid `(Drug)-[:POTENTIAL_CANDIDATE]->(Virus)` relationships.
     
 
 ⚙️ Technical Architecture
@@ -26,9 +26,9 @@
 
 *   **Dual-Model Approach:** We utilize two distinct HuggingFace Transformers:
     
-    *   alvaroalon2/biobert\_chemical\_ner: For precise drug/chemical extraction.
+    *   `alvaroalon2/biobert_chemical_ner`: For precise drug/chemical extraction.
         
-    *   ugaray96/biobert\_ncbi\_disease\_ner: For virus/disease validation.
+    *   `ugaray96/biobert_ncbi_disease_ner`: For virus/disease validation.
         
 *   **GPU Acceleration:** Optimized for local NVIDIA GPUs (RTX 4060) using PyTorch CUDA tensors. It processes papers in batches of 32 for maximum throughput.
     
@@ -37,9 +37,9 @@
 
 *   **Neo4j Database:** Stores findings as a graph network.
     
-*   **Nodes:** Drug, Virus, Paper.
+*   **Nodes:** `Drug`, `Virus`, `Paper`.
     
-*   **Edges:** POTENTIAL\_CANDIDATE (with confidence scores), MENTIONED\_IN (linking back to source evidence).
+*   **Edges:** `POTENTIAL_CANDIDATE` (with confidence scores), `MENTIONED_IN` (linking back to source evidence).
     
 
 ### 3\. The Data Pipeline
@@ -79,97 +79,88 @@
 
 ### 1\. Clone the Repository
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   git clone [https://github.com/yourusername/BioScan.git](https://github.com/yourusername/BioScan.git)  cd BioScan   `
+    git clone [https://github.com/yourusername/BioScan.git](https://github.com/yourusername/BioScan.git)
+    cd BioScan
+    
 
 ### 2\. Database Setup
 
 1.  Open **Neo4j Desktop**.
     
-2.  Create a Local DBMS named BioScanDB.
+2.  Create a Local DBMS named `BioScanDB`.
     
-3.  Set password to password123 (or update backend/main.py with your credentials).
+3.  Set password to `password123` (or update `backend/main.py` with your credentials).
     
 4.  Start the database.
     
 
-3\. Backend Setup
+### 3\. Backend Setup
 
-\# Navigate to backend
+    # Navigate to backend
+    cd backend
+    
+    # Install dependencies
+    pip install -r requirements.txt
+    
+    # Run the API Server
+    uvicorn main:app --reload
+    
 
-cd backend
+_You should see:_ `⚡ [AI Engine] Loading Models on: NVIDIA GeForce RTX...`
 
-  
+### 4\. Frontend Setup
 
-\# Install dependencies
+    # Open a new terminal
+    cd frontend
+    
+    # Install dependencies
+    npm install
+    
+    # Start the React Dashboard
+    npm start
+    
 
-pip install -r requirements.txt
-
-  
-
-\# Run the API Server
-
-uvicorn main:app --reload
-
-You should see: ⚡ \[AI Engine\] Loading Models on: NVIDIA GeForce RTX...
-
-  
-
-4\. Frontend Setup
-
-\# Open a new terminal
-
-cd frontend
-
-  
-
-\# Install dependencies
-
-npm install
-
-  
-
-\# Start the React Dashboard
-
-npm start
-
-The app will launch at http://localhost:3000
-
-  
+_The app will launch at_ `http://localhost:3000`
 
 🧪 Usage
+--------
 
-Open the web dashboard.
-
-Enter a viral target (e.g., "Dengue Virus").
-
-Select the number of papers to scan (e.g., 50).
-
-Click "Start Analysis".
-
-Watch the logs as the GPU crunches through literature.
-
-View Results:
-
-On Screen: See a ranked list of drugs with the exact sentence context ("evidence").
-
-In Neo4j: Open Neo4j Browser and run MATCH (n) RETURN n to see the knowledge graph grow in real-time.
+1.  Open the web dashboard.
+    
+2.  Enter a viral target (e.g., **"Dengue Virus"**).
+    
+3.  Select the number of papers to scan (e.g., **50**).
+    
+4.  Click **"Start Analysis"**.
+    
+5.  Watch the logs as the GPU crunches through literature.
+    
+6.  **View Results:**
+    
+    *   **On Screen:** See a ranked list of drugs with the exact sentence context ("evidence").
+        
+    *   **In Neo4j:** Open Neo4j Browser and run `MATCH (n) RETURN n` to see the knowledge graph grow in real-time.
+        
 
 🔮 Roadmap
+----------
 
-\[x\] MVP: Real-time scraping & NLP Analysis
-
-\[x\] GPU Acceleration & Batch Processing
-
-\[x\] Knowledge Graph Integration (Neo4j)
-
-\[ \] Advanced Graph Schema: Link Papers explicitly to authors and journals.
-
-\[ \] Frontend Graph Viz: Implement react-force-graph for 3D network exploration in the browser.
-
-\[ \] Molecular Validation: Integrate RDKit to validate molecular weight and druggability.
+*   \[x\] MVP: Real-time scraping & NLP Analysis
+    
+*   \[x\] GPU Acceleration & Batch Processing
+    
+*   \[x\] Knowledge Graph Integration (Neo4j)
+    
+*   \[ \] **Advanced Graph Schema:** Link Papers explicitly to authors and journals.
+    
+*   \[ \] **Frontend Graph Viz:** Implement `react-force-graph` for 3D network exploration in the browser.
+    
+*   \[ \] **Molecular Validation:** Integrate `RDKit` to validate molecular weight and druggability.
+    
 
 📜 License
+----------
 
-Distributed under the MIT License. See LICENSE for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
 
-Built with ❤️ and ☕ by \[Shubham Gupta,Aryan Yadav,Om Telgade\]
+_Built with ❤️ and ☕ by \[Shubham Gupta,Aryan Yadav,Om Telgade\]_
