@@ -1,95 +1,148 @@
-# 🧬 BioScan: AI-Powered Drug Repurposing Engine
+🧬 BioScan: AI-Powered Drug Repurposing Engine
+==============================================
 
-**BioScan** is an automated, high-performance *in-silico drug discovery engine*.  
-It mines thousands of biomedical research papers in real time to uncover hidden relationships between **FDA-approved drugs** and **viral targets** (with a focus on *Flaviviridae*: Dengue, Zika, etc.).
+**BioScan** is an automated, high-performance in-silico drug discovery engine. It mines thousands of biomedical research papers in real-time to uncover hidden relationships between existing FDA-approved drugs and viral targets (focusing on Flaviviridae: Dengue, Zika, etc.).
 
----
+🚀 The Problem & Solution
+-------------------------
 
-## 🚀 Problem & Solution
+**The Gap:** With over 30 million papers in PubMed, finding obscure connections between a drug used for one disease and a protein structure in a new virus is a massive "needle in a haystack" problem for human researchers.
 
-### **The Gap**
-With over **30 million** papers in PubMed, finding obscure relationships between:
-- a drug used for one disease, and  
-- a protein structure in a new virus  
+**Our Solution:** An autonomous pipeline that:
 
-…is a massive *“needle in a haystack”* problem for human researchers.
+1.  **Ingests** abstracts from PubMed using the Entrez API.
+    
+2.  **Reads** text using **Dual-BioBERT models** (one for Chemicals, one for Diseases) to perform precise Named Entity Recognition (NER).
+    
+3.  **Filters** findings using sentence-level context logic and molecular interaction keywords.
+    
+4.  **Constructs** a Knowledge Graph (Neo4j) to visualize valid (Drug)-\[:POTENTIAL\_CANDIDATE\]->(Virus) relationships.
+    
 
-### **Our Solution**
-BioScan provides an autonomous AI-driven pipeline that:
+⚙️ Technical Architecture
+-------------------------
 
-- Ingests abstracts from **PubMed** via the Entrez API  
-- Reads text using **Dual-BioBERT NER models**  
-  - Chemical NER (drug extraction)  
-  - Disease/virus NER (target validation)  
-- Filters relevant sentences using **context rules + molecular interaction keywords**  
-- Builds a **Neo4j Knowledge Graph** mapping  
-  **(Drug) –[:POTENTIAL_CANDIDATE]→ (Virus)**  
-  with evidence and confidence scores.
+### 1\. The "Brain" (NLP Engine)
 
----
+*   **Dual-Model Approach:** We utilize two distinct HuggingFace Transformers:
+    
+    *   alvaroalon2/biobert\_chemical\_ner: For precise drug/chemical extraction.
+        
+    *   ugaray96/biobert\_ncbi\_disease\_ner: For virus/disease validation.
+        
+*   **GPU Acceleration:** Optimized for local NVIDIA GPUs (RTX 4060) using PyTorch CUDA tensors. It processes papers in batches of 32 for maximum throughput.
+    
 
-## ⚙️ Technical Architecture
+### 2\. The Knowledge Graph
 
-### **1. The Brain (NLP Engine)**
+*   **Neo4j Database:** Stores findings as a graph network.
+    
+*   **Nodes:** Drug, Virus, Paper.
+    
+*   **Edges:** POTENTIAL\_CANDIDATE (with confidence scores), MENTIONED\_IN (linking back to source evidence).
+    
 
-#### **Dual-Model Approach**
-Two HuggingFace BioBERT Transformers:
+### 3\. The Data Pipeline
 
-- `alvaroalon2/biobert_chemical_ner` — Extracts chemicals/drugs  
-- `ugaray96/biobert_ncbi_disease_ner` — Extracts disease/virus entities  
+*   **Scraper:** Custom recursive XML parser built on Biopython to handle inconsistent PubMed metadata.
+    
+*   **Resilience:** Implements retry logic and polite backoff to respect NCBI API rate limits.
+    
 
-#### **GPU Acceleration**
-- Optimized for NVIDIA GPUs (e.g., **RTX 4060**)  
-- Runs on **PyTorch CUDA**  
-- Batch size: **32 papers per inference cycle**
+🛠️ Tech Stack
+--------------
 
----
+*   **Backend:** Python 3.9+, FastAPI, Uvicorn
+    
+*   **AI/ML:** PyTorch, Transformers (HuggingFace), BioBERT
+    
+*   **Database:** Neo4j (Graph DB)
+    
+*   **Frontend:** React.js, Axios
+    
+*   **Data Source:** PubMed (NCBI Entrez)
+    
 
-### **2. Knowledge Graph Layer**
+🏁 Getting Started
+------------------
 
-**Neo4j Graph Database**
+### Prerequisites
 
-- **Nodes:** Drug, Virus, Paper  
-- **Edges:**  
-  - `POTENTIAL_CANDIDATE` (with confidence score)  
-  - `MENTIONED_IN` (links findings to source literature)
+*   **Python 3.9+** installed.
+    
+*   **Node.js & npm** installed.
+    
+*   **Neo4j Desktop** installed and running.
+    
+*   _(Optional but Recommended)_ NVIDIA GPU with CUDA drivers.
+    
 
-Real-time visualization through Neo4j Browser.
+### 1\. Clone the Repository
 
----
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   git clone [https://github.com/yourusername/BioScan.git](https://github.com/yourusername/BioScan.git)  cd BioScan   `
 
-### **3. Data Pipeline**
+### 2\. Database Setup
 
-- Custom recursive **XML parser** using **Biopython**  
-- Handles inconsistent PubMed metadata  
-- Built-in **retry logic & polite rate limiting** to satisfy NCBI requirements  
+1.  Open **Neo4j Desktop**.
+    
+2.  Create a Local DBMS named BioScanDB.
+    
+3.  Set password to password123 (or update backend/main.py with your credentials).
+    
+4.  Start the database.
+    
 
----
+### 3\. Backend Setup
 
-## 🛠️ Tech Stack
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   # Navigate to backend  cd backend  # Install dependencies  pip install -r requirements.txt  # Run the API Server  uvicorn main:app --reload   `
 
-| Component | Technology |
-|----------|------------|
-| **Backend** | Python 3.9+, FastAPI, Uvicorn |
-| **AI/ML** | PyTorch, HuggingFace Transformers, BioBERT |
-| **Database** | Neo4j |
-| **Frontend** | React.js, Axios |
-| **Data Source** | PubMed (NCBI Entrez API) |
+_You should see:_ ⚡ \[AI Engine\] Loading Models on: NVIDIA GeForce RTX...
 
----
+### 4\. Frontend Setup
 
-## 🏁 Getting Started
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   # Open a new terminal  cd frontend  # Install dependencies  npm install  # Start the React Dashboard  npm start   `
 
-### **Prerequisites**
-- Python **3.9+**  
-- Node.js & npm  
-- Neo4j Desktop  
-- (Optional) NVIDIA GPU with CUDA for faster inference  
+_The app will launch at_ http://localhost:3000
 
----
+🧪 Usage
+--------
 
-### **1. Clone the Repository**
+1.  Open the web dashboard.
+    
+2.  Enter a viral target (e.g., **"Dengue Virus"**).
+    
+3.  Select the number of papers to scan (e.g., **50**).
+    
+4.  Click **"Start Analysis"**.
+    
+5.  Watch the logs as the GPU crunches through literature.
+    
+6.  **View Results:**
+    
+    *   **On Screen:** See a ranked list of drugs with the exact sentence context ("evidence").
+        
+    *   **In Neo4j:** Open Neo4j Browser and run MATCH (n) RETURN n to see the knowledge graph grow in real-time.
+        
 
-```bash
-git clone https://github.com/yourusername/BioScan.git
-cd BioScan
+🔮 Roadmap
+----------
+
+*   \[x\] MVP: Real-time scraping & NLP Analysis
+    
+*   \[x\] GPU Acceleration & Batch Processing
+    
+*   \[x\] Knowledge Graph Integration (Neo4j)
+    
+*   \[ \] **Advanced Graph Schema:** Link Papers explicitly to authors and journals.
+    
+*   \[ \] **Frontend Graph Viz:** Implement react-force-graph for 3D network exploration in the browser.
+    
+*   \[ \] **Molecular Validation:** Integrate RDKit to validate molecular weight and druggability.
+    
+
+📜 License
+----------
+
+Distributed under the MIT License. See LICENSE for more information.
+
+_Built with ❤️ and ☕ by \[shubham gupta,aryan yadav,om telgade\]_
