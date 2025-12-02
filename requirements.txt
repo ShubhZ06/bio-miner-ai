@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+biopython
+torch
+transformers
+neo4j
+requests
+numpy
