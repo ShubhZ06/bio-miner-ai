@@ -1,145 +1,102 @@
-Project Manifest: BioScan In-Silico Drug Repurposing Engine
+🧬 Project Manifest: BioScan AI Engine
 
-1. Executive Summary
+Target Environment: Google Antigravity (Agentic IDE)
+Hardware Context: Local Execution (NVIDIA RTX 4060 GPU Detected)
 
-Project Name: BioScan AI Engine
-Domain: Computational Biology / NLP / Drug Discovery
-Status: MVP (GPU-Accelerated Prototype)
+1. Project Identity & Mission
 
-Core Mission: To automate the discovery of existing FDA-approved drugs that can be repurposed to treat neglected viral diseases (specifically Flaviviridae family: Dengue, Zika, etc.) by mining vast amounts of unstructured biomedical literature.
+BioScan is an automated drug repurposing engine. It scrapes biomedical literature (PubMed), uses dual-model NLP to extract Drug-Virus interactions, and constructs a Knowledge Graph (Neo4j) to visualize hidden connections.
 
-2. Motivation & Problem Statement
+Core Logic:
 
-The Problem
+Ingest: Fetch abstracts from PubMed.
 
-Data Overload: There are over 30 million papers in PubMed. No human researcher can cross-reference all of them to find obscure connections between existing drugs and new viral targets.
+Analyze: Use BioBERT-Chemical + BioBERT-Disease to find entities.
 
-Time-to-Market: Developing a new drug takes 10-15 years.
+Filter: Apply heuristic logic (Co-occurrence + Keyword Match) to valid interactions.
 
-The "Hidden Link": A drug might be known to inhibit "Protein X" in a cancer study, and "Protein X" might be vital for "Zika Virus" replication. These two facts often exist in separate papers, unconnected until now.
+Graph: Store findings in Neo4j (Drug -> Virus).
 
-The Solution
+2. Architecture & Constraints (CRITICAL FOR AGENTS)
 
-An automated NLP Pipeline that:
+🛑 Agent Boundaries (DO NOT MODIFY WITHOUT APPROVAL)
 
-Ingests thousands of abstracts from PubMed in real-time.
+Dual-Model Setup (backend/nlp_model.py): We use two separate BERT pipelines (one for Chemicals, one for Diseases). Do not consolidate these into a single model; precision will drop.
 
-Uses Domain-Specific AI (BioBERT) to "read" and understand biological entities.
+GPU Batching: The analyze_batch function uses batch_size=32 and abstract[:512] truncation. Do not remove truncation; it will cause CUDA OOM errors on the RTX 4060.
 
-Applies heuristic logic to identify valid interactions (e.g., "Chloroquine inhibits autophagy").
+Scraper Resilience (backend/scraper.py): The safe_get utility is mandatory. PubMed XML structure varies wildly; removing this utility will cause production crashes.
 
-Outputs a ranked list of drug candidates for immediate review.
+Database Credentials: The codebase expects a local Neo4j instance at bolt://localhost:7687 with neo4j/password123.
 
-3. System Architecture
+Tech Stack
 
-A. The Data Pipeline (Ingestion)
+Backend: Python 3.9+ (FastAPI, Uvicorn)
 
-Source: PubMed (NCBI Entrez API).
+AI/ML: PyTorch (CUDA), HuggingFace Transformers
 
-Tooling: Biopython.
+Database: Neo4j (Graph DB), Biopython (Entrez API)
 
-Strategy: * Batch processing (chunks of 50-100 papers) to respect API rate limits.
+Frontend: React.js (Create React App)
 
-Recursive XML parsing to handle inconsistent metadata structures.
+3. Operational Commands (For Agent Execution)
 
-Defensive error handling (skips malformed records without crashing).
+The agent should use these commands to run and verify the application.
 
-B. The AI Engine (The "Brain")
+1. Install Dependencies
 
-Hardware context: Optimized for NVIDIA RTX 4060 (8GB VRAM).
+pip install -r requirements.txt
+cd frontend && npm install
 
-Models: Dual-Model Architecture using HuggingFace Transformers.
 
-Chemical/Drug NER: alvaroalon2/biobert_chemical_ner (Trained on BC5CDR).
+2. Start Backend (Terminal A)
+Must be run from root or backend/ folder.
 
-Disease/Virus NER: ugaray96/biobert_ncbi_disease_ner (Trained on NCBI Disease).
+cd backend
+uvicorn main:app --reload
 
-Inference Strategy:
 
-GPU Batching: Processes papers in batches of 32 to maximize CUDA core usage.
+Success Signal: ⚡ [AI Engine] Loading Models on: NVIDIA GeForce RTX 4060
 
-Truncation: Abstracts limited to 512 tokens to fit BERT architecture constraints.
+3. Start Frontend (Terminal B)
 
-C. The Logic Layer (Heuristic Filtering)
+cd frontend
+npm start
 
-We do not rely solely on NER. We use Context-Aware Filtering:
 
-Sentence Splitting: Abstracts are broken into individual sentences.
+Success Signal: Browser opens at http://localhost:3000.
 
-Co-occurrence Check: A detection is valid ONLY if:
+4. Neo4j Verification (Cypher)
+To verify data insertion, run this in Neo4j Browser:
 
-A Drug Entity is found.
+MATCH (d:Drug)-[r:POTENTIAL_CANDIDATE]->(v:Virus) RETURN d, r, v LIMIT 25
 
-An Interaction Keyword is present in the same sentence (e.g., "inhibit", "block", "treat", "bind").
 
-Evidence Extraction: The specific sentence triggering the match is preserved as "evidence" for the user.
+4. Directory Map (Context)
 
-4. Technology Stack
+AVISKAR/
+├── backend/
+│   ├── main.py          # API Gateway (FastAPI) & Graph DB Connection
+│   ├── nlp_model.py     # The "Brain" (Dual-BERT + Blacklist Logic)
+│   ├── scraper.py       # PubMed Data Ingestion (Recursive XML parsing)
+│   └── graph_db.py      # Neo4j Connector Class
+├── frontend/
+│   ├── src/
+│   │   ├── App.js       # Main Dashboard UI
+│   │   └── ...
+│   └── package.json
+├── requirements.txt     # Python Dependencies
+└── PROJECT_MANIFEST.md  # This file
 
-Component
 
-Technology
+5. Development Roadmap (Agent Tasks)
 
-Reasoning
+Current Phase: MVP Complete (Dual-BERT + Graph).
 
-Backend
+Next Agent Objectives (In Order):
 
-Python 3.9+, FastAPI
+Refactor Graph Schema: Update backend/graph_db.py to include "Paper" nodes explicitly, linking (Drug)-[:MENTIONED_IN]->(Paper).
 
-High performance, native async support for heavy ML tasks.
+Frontend Visualization: Replace the text list in React with a visual graph library (e.g., react-force-graph) to show the node network in the browser.
 
-ML Framework
-
-PyTorch (CUDA)
-
-Essential for GPU acceleration of BERT models.
-
-NLP Library
-
-HuggingFace Transformers
-
-Standard for state-of-the-art pre-trained models.
-
-Frontend
-
-React.js
-
-fast, reactive UI for displaying real-time scan results.
-
-Data Source
-
-PubMed (XML/API)
-
-The gold standard for biomedical literature.
-
-5. Current Implementation Details (For Developers)
-
-Critical Files
-
-backend/scraper.py: Handles the Entrez connection. Contains safe_get utility for XML parsing.
-
-backend/nlp_model.py: Loads the Two BioBERT pipelines. Contains the analyze_batch function and the INTERACTION_KEYWORDS list.
-
-backend/main.py: The entry point. Manages the flow: Request -> Scrape -> Analyze -> Response.
-
-Optimization Flags
-
-DEVICE = 0: Code explicitly checks for torch.cuda.is_available().
-
-BATCH_SIZE = 32: Tuned for 8GB VRAM to prevent OOM (Out of Memory) errors.
-
-6. Roadmap & Future Goals
-
-Knowledge Graph Integration (Neo4j):
-
-Current: Linear list of findings.
-
-Goal: Store relationships as Nodes/Edges (Drug)-[:INHIBITS]->(Virus) to find indirect paths (Drug A -> Protein B -> Virus C).
-
-Full Text Parsing:
-
-Move beyond abstracts to parse full PDF/PMC XML content for deeper insights.
-
-ChemInformatics:
-
-Integrate molecular docking scores (using RDKit) to validate if the found drug actually fits the viral protein.
+Molecular Validation (Future): Integrate rdkit to check if the found Drug actually has a molecular weight compatible with viral protein pockets.
