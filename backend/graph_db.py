@@ -48,3 +48,110 @@ class BioGraphDB:
             "MERGE (d)-[:MENTIONED_IN]->(p) "
         )
         tx.run(query, drug=drug, virus=virus, title=title, evidence=evidence)
+
+    def get_virus_graph(self, virus_name):
+        """
+        Retrieves the sub-graph for a specific virus to visualize in the frontend.
+        Returns nodes and links formatted for react-force-graph.
+        """
+        if not self.driver:
+            return {"nodes": [], "links": []}
+
+        with self.driver.session() as session:
+            return session.execute_read(self._fetch_graph, virus_name)
+
+    @staticmethod
+    def _fetch_graph(tx, virus_name):
+        # Query to get Drug-Virus relationships and Papers
+        query = (
+            "MATCH (d:Drug)-[r1:POTENTIAL_CANDIDATE]->(v:Virus {name: $virus}) "
+            "OPTIONAL MATCH (d)-[r2:MENTIONED_IN]->(p:Paper) "
+            "RETURN d.name as drug, v.name as virus, r1.confidence as confidence, "
+            "r1.evidence as evidence, collect(DISTINCT p.title) as papers"
+        )
+        result = tx.run(query, virus=virus_name)
+        
+        nodes_dict = {}
+        links = []
+        
+        # Add the central virus node
+        nodes_dict[virus_name] = {
+            "id": virus_name,
+            "label": virus_name,
+            "group": "Virus"
+        }
+        
+        for record in result:
+            drug = record["drug"]
+            papers = record["papers"]
+            
+            # Add drug node
+            if drug not in nodes_dict:
+                nodes_dict[drug] = {
+                    "id": drug,
+                    "label": drug,
+                    "group": "Drug"
+                }
+            
+            # Add Drug -> Virus relationship
+            links.append({
+                "source": drug,
+                "target": virus_name,
+                "label": "POTENTIAL_CANDIDATE",
+                "type": "POTENTIAL_CANDIDATE"
+            })
+            
+            # Add paper nodes and relationships
+            for paper in papers:
+                if paper and paper not in nodes_dict:
+                    # Truncate long paper titles for display
+                    short_title = paper[:50] + "..." if len(paper) > 50 else paper
+                    nodes_dict[paper] = {
+                        "id": paper,
+                        "label": short_title,
+                        "group": "Paper"
+                    }
+                    
+                    # Add Drug -> Paper relationship
+                    links.append({
+                        "source": drug,
+                        "target": paper,
+                        "label": "MENTIONED_IN",
+                        "type": "MENTIONED_IN"
+                    })
+        
+        node_list = list(nodes_dict.values())
+        
+        return {"nodes": node_list, "links": links}
+    
+    def get_virus_data(self, virus_name):
+        """
+        Retrieves detailed drug-virus interaction data for the Data View.
+        Returns a list of interactions with drug names, evidence, and confidence.
+        """
+        if not self.driver:
+            return []
+        
+        with self.driver.session() as session:
+            return session.execute_read(self._fetch_virus_data, virus_name)
+    
+    @staticmethod
+    def _fetch_virus_data(tx, virus_name):
+        query = (
+            "MATCH (d:Drug)-[r:POTENTIAL_CANDIDATE]->(v:Virus {name: $virus}) "
+            "OPTIONAL MATCH (d)-[:MENTIONED_IN]->(p:Paper) "
+            "RETURN d.name as drug, r.evidence as evidence, r.confidence as confidence, "
+            "collect(DISTINCT p.title) as papers"
+        )
+        result = tx.run(query, virus=virus_name)
+        
+        interactions = []
+        for record in result:
+            interactions.append({
+                "drug": record["drug"],
+                "evidence": record["evidence"],
+                "confidence": record["confidence"] or "High",
+                "papers": record["papers"]
+            })
+        
+        return interactions

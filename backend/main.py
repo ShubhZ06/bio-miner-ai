@@ -17,8 +17,8 @@ app.add_middleware(
 
 # --- DATABASE SETUP ---
 # Initialize Neo4j Connection
-# Ensure Neo4j Desktop is running with these credentials
-graph_db = BioGraphDB("bolt://localhost:7687", "neo4j", "password123")
+# Using Neo4j Aura Instance
+graph_db = BioGraphDB("neo4j+s://81767515.databases.neo4j.io", "neo4j", "utSBg1cWvOQgEPnJf_DWfcsFIT4UlCmQQ1Jo1S2MN3M")
 
 @app.get("/")
 def home():
@@ -63,3 +63,27 @@ def scan_virus(virus_name: str, limit: int = 50):
         "execution_time": f"{duration}s",
         "data": results
     }
+
+@app.get("/graph/{virus_name}")
+def get_graph(virus_name: str):
+    """
+    Returns the graph structure (nodes/links) for the requested virus.
+    """
+    if not graph_db.driver:
+        return {"nodes": [], "links": []}
+        
+    return graph_db.get_virus_graph(virus_name)
+
+@app.get("/data/{virus_name}")
+def get_data(virus_name: str):
+    """
+    Returns detailed drug-virus interaction data from the database.
+    """
+    if not graph_db.driver:
+        return []
+        
+    return graph_db.get_virus_data(virus_name)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
