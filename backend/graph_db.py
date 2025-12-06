@@ -97,8 +97,10 @@ class BioGraphDB:
                 # Determine ID and Type based on labels
                 labels = list(node.labels)
                 if "Virus" in labels:
-                    node_id = node.get("name")
                     node_type = "Virus"
+                    # Canonicalize Virus ID to the search term (Title Case) to merge duplicates
+                    # e.g., "dengue", "Dengue Virus" -> "Dengue"
+                    node_id = virus_name.title()
                 elif "Drug" in labels:
                     node_id = node.get("name")
                     node_type = "Drug"
@@ -114,7 +116,10 @@ class BioGraphDB:
                 label = node_id
                 if node_type == "Paper" and label and len(label) > 30:
                     label = label[:30] + "..."
-
+                
+                # For non-virus nodes, we use the original logic
+                # For Virus nodes, we've already normalized node_id
+                
                 if node_id and node_id not in nodes_dict:
                     nodes_dict[node_id] = {
                         "id": node_id,
@@ -127,10 +132,19 @@ class BioGraphDB:
                 start_node = rel.start_node
                 end_node = rel.end_node
                 
-                # Resolve IDs for start/end
-                # (Re-using logic, simplified here for now)
-                start_id = start_node.get("name") or start_node.get("title") or start_node.get("id")
-                end_id = end_node.get("name") or end_node.get("title") or end_node.get("id")
+                # Resolve IDs for start/end with same normalization logic
+                def resolve_id(n):
+                    lbls = list(n.labels)
+                    if "Virus" in lbls:
+                        return virus_name.title()
+                    elif "Drug" in lbls:
+                        return n.get("name")
+                    elif "Paper" in lbls:
+                        return n.get("title") or n.get("id")
+                    return n.get("name") or n.get("id") or str(n.id)
+
+                start_id = resolve_id(start_node)
+                end_id = resolve_id(end_node)
                 
                 # Create unique link key
                 link_key = f"{start_id}-{rel.type}-{end_id}"
