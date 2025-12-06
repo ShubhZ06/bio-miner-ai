@@ -111,6 +111,7 @@ def analyze_batch(papers_list):
 
         if valid_connections:
             analyzed_data.append({
+                "pmid": paper.get('pmid'),
                 "title": paper['title'],
                 "matches": valid_connections
             })

@@ -21,7 +21,7 @@ class BioGraphDB:
         if self.driver:
             self.driver.close()
 
-    def add_interaction(self, drug, virus, paper_title, evidence):
+    def add_interaction(self, drug, virus, paper_title, evidence, pmid=None):
         """
         Creates the following graph structure:
         (Drug)-[:POTENTIAL_CANDIDATE]->(Virus)
@@ -32,22 +32,24 @@ class BioGraphDB:
 
         with self.driver.session() as session:
             try:
-                session.execute_write(self._create_nodes, drug, virus, paper_title, evidence)
+                session.execute_write(self._create_nodes, drug, virus, paper_title, evidence, pmid)
             except Exception as e:
                 logger.error(f"❌ Graph Write Error: {e}")
 
     @staticmethod
-    def _create_nodes(tx, drug, virus, title, evidence):
+    def _create_nodes(tx, drug, virus, title, evidence, pmid):
         # Cypher Query: Merge ensures we don't create duplicates
+        # Use PMID as primary key if available, otherwise fallback to title
         query = (
             "MERGE (d:Drug {name: $drug}) "
             "MERGE (v:Virus {name: $virus}) "
-            "MERGE (p:Paper {title: $title}) "
+            "MERGE (p:Paper {id: COALESCE($pmid, $title)}) "
+            "SET p.title = $title "
             "MERGE (d)-[r:POTENTIAL_CANDIDATE]->(v) "
             "SET r.evidence = $evidence, r.confidence = 'High', r.last_updated = datetime() "
             "MERGE (d)-[:MENTIONED_IN]->(p) "
         )
-        tx.run(query, drug=drug, virus=virus, title=title, evidence=evidence)
+        tx.run(query, drug=drug, virus=virus, title=title, evidence=evidence, pmid=pmid)
 
     def get_virus_graph(self, virus_name):
         """
@@ -62,67 +64,86 @@ class BioGraphDB:
 
     @staticmethod
     def _fetch_graph(tx, virus_name):
-        # Query to get Drug-Virus relationships and Papers
+        """
+        Fetches the knowledge graph around the target virus.
+        Uses a generic 2-hop traversal to find connected Nodes (Drug, Paper, etc.)
+        and Relationships (POTENTIAL_CANDIDATE, MENTIONED_IN, etc.).
+        """
+        # Generic query to fetch Virus and its 2-hop neighborhood.
+        # This allows the frontend to be flexible with node types.
+        # Limit paths to avoid overwhelming the visualization.
         query = (
-            "MATCH (d:Drug)-[r1:POTENTIAL_CANDIDATE]->(v:Virus {name: $virus}) "
-            "OPTIONAL MATCH (d)-[r2:MENTIONED_IN]->(p:Paper) "
-            "RETURN d.name as drug, v.name as virus, r1.confidence as confidence, "
-            "r1.evidence as evidence, collect(DISTINCT p.title) as papers"
+            "MATCH (v:Virus) WHERE toLower(v.name) CONTAINS toLower($virus) "
+            "OPTIONAL MATCH path = (v)-[*1..2]-(n) "
+            "WHERE NOT (n:Virus AND n <> v) "
+            "RETURN path LIMIT 200"
         )
+        
         result = tx.run(query, virus=virus_name)
         
         nodes_dict = {}
-        links = []
-        
-        # Add the central virus node
-        nodes_dict[virus_name] = {
-            "id": virus_name,
-            "label": virus_name,
-            "group": "Virus"
-        }
+        links_dict = {} # Use dict to avoid duplicate links key
         
         for record in result:
-            drug = record["drug"]
-            papers = record["papers"]
-            
-            # Add drug node
-            if drug not in nodes_dict:
-                nodes_dict[drug] = {
-                    "id": drug,
-                    "label": drug,
-                    "group": "Drug"
-                }
-            
-            # Add Drug -> Virus relationship
-            links.append({
-                "source": drug,
-                "target": virus_name,
-                "label": "POTENTIAL_CANDIDATE",
-                "type": "POTENTIAL_CANDIDATE"
-            })
-            
-            # Add paper nodes and relationships
-            for paper in papers:
-                if paper and paper not in nodes_dict:
-                    # Truncate long paper titles for display
-                    short_title = paper[:50] + "..." if len(paper) > 50 else paper
-                    nodes_dict[paper] = {
-                        "id": paper,
-                        "label": short_title,
-                        "group": "Paper"
+            path = record["path"]
+            if not path:
+                continue
+                
+            # Iterate through all nodes in the path
+            for node in path.nodes:
+                node_id = None
+                node_type = "Unknown"
+                
+                # Determine ID and Type based on labels
+                labels = list(node.labels)
+                if "Virus" in labels:
+                    node_id = node.get("name")
+                    node_type = "Virus"
+                elif "Drug" in labels:
+                    node_id = node.get("name")
+                    node_type = "Drug"
+                elif "Paper" in labels:
+                    node_id = node.get("title") or node.get("id")
+                    node_type = "Paper"
+                else:
+                    # Fallback for other nodes
+                    node_id = node.get("name") or node.get("id") or str(node.id)
+                    node_type = labels[0] if labels else "Unknown"
+
+                # Truncate long IDs for display label
+                label = node_id
+                if node_type == "Paper" and label and len(label) > 30:
+                    label = label[:30] + "..."
+
+                if node_id and node_id not in nodes_dict:
+                    nodes_dict[node_id] = {
+                        "id": node_id,
+                        "label": label,
+                        "type": node_type
                     }
-                    
-                    # Add Drug -> Paper relationship
-                    links.append({
-                        "source": drug,
-                        "target": paper,
-                        "label": "MENTIONED_IN",
-                        "type": "MENTIONED_IN"
-                    })
-        
-        node_list = list(nodes_dict.values())
-        
-        return {"nodes": node_list, "links": links}
+            
+            # Iterate through all relationships in the path
+            for rel in path.relationships:
+                start_node = rel.start_node
+                end_node = rel.end_node
+                
+                # Resolve IDs for start/end
+                # (Re-using logic, simplified here for now)
+                start_id = start_node.get("name") or start_node.get("title") or start_node.get("id")
+                end_id = end_node.get("name") or end_node.get("title") or end_node.get("id")
+                
+                # Create unique link key
+                link_key = f"{start_id}-{rel.type}-{end_id}"
+                
+                if link_key not in links_dict:
+                    links_dict[link_key] = {
+                        "source": start_id,
+                        "target": end_id,
+                        "label": rel.type,
+                        "type": rel.type
+                    }
+
+        return {"nodes": list(nodes_dict.values()), "links": list(links_dict.values())}
     
     def get_virus_data(self, virus_name):
         """
@@ -138,7 +159,8 @@ class BioGraphDB:
     @staticmethod
     def _fetch_virus_data(tx, virus_name):
         query = (
-            "MATCH (d:Drug)-[r:POTENTIAL_CANDIDATE]->(v:Virus {name: $virus}) "
+            "MATCH (d:Drug)-[r:POTENTIAL_CANDIDATE]->(v:Virus) "
+            "WHERE toLower(v.name) CONTAINS toLower($virus) "
             "OPTIONAL MATCH (d)-[:MENTIONED_IN]->(p:Paper) "
             "RETURN d.name as drug, r.evidence as evidence, r.confidence as confidence, "
             "collect(DISTINCT p.title) as papers"

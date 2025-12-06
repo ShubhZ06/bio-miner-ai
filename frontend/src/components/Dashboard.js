@@ -8,6 +8,8 @@ function Dashboard() {
     const [virusName, setVirusName] = useState('');
     const [limit, setLimit] = useState(50);
     const [loading, setLoading] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [progressStage, setProgressStage] = useState('');
     const [results, setResults] = useState(null);
     const [error, setError] = useState(null);
 
@@ -27,20 +29,46 @@ function Dashboard() {
         setLoading(true);
         setError(null);
         setResults(null);
+        setProgress(0);
+        setProgressStage('Initializing...');
 
         try {
             const response = await fetch(`http://localhost:8000/scan/${virusName}?limit=${limit}`);
-            const data = await response.json();
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
 
-            if (data.status === 'empty') {
-                setError(data.message);
-            } else {
-                setResults(data);
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                // Handle multiple JSON objects in one chunk
+                const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                for (const line of lines) {
+                    try {
+                        const data = JSON.parse(line);
+
+                        if (data.status === 'progress') {
+                            setProgress(data.percent);
+                            setProgressStage(data.stage);
+                        } else if (data.status === 'complete') {
+                            setResults(data.data);
+                            setLoading(false);
+                            setProgress(100);
+                        } else if (data.status === 'error') {
+                            setError(data.message);
+                            setLoading(false);
+                        }
+                    } catch (e) {
+                        console.error("Error parsing stream chunk:", e);
+                    }
+                }
             }
+
         } catch (err) {
             setError("Failed to connect to backend. Is it running?");
             console.error(err);
-        } finally {
             setLoading(false);
         }
     };
@@ -55,11 +83,16 @@ function Dashboard() {
 
 
     return (
-        <div className="App">
-            <header className="App-header">
-                <h1>🧬 Bio-Miner AI</h1>
-                <p>Automated Drug Repurposing Engine</p>
-            </header>
+
+        <div className="landing-container" style={{ paddingTop: '80px' }}>
+            <nav className="landing-navbar">
+                <div className="nav-logo" onClick={() => window.location.href = '/'} style={{ cursor: 'pointer' }}>
+                    Bio-Miner AI
+                </div>
+                <div className="nav-links">
+                    <a href="/">Home</a>
+                </div>
+            </nav>
 
             <main className="App-main">
                 <div className="control-panel">
@@ -83,13 +116,41 @@ function Dashboard() {
                         />
                     </div>
                     <button onClick={handleScan} disabled={loading || !virusName}>
-                        {loading ? 'Scanning PubMed...' : 'Start Analysis'}
+                        {loading ? 'Scanning...' : 'Start Analysis'}
                     </button>
                 </div>
 
+                {/* Progress Bar Area - Visible during loading OR when results exist */}
+                {(loading || results) && (
+                    <div className="progress-container" style={{ maxWidth: '800px', margin: '20px auto', padding: '0 20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: 'var(--text-color)' }}>
+                            <span style={{ fontWeight: '500' }}>
+                                {loading ? progressStage : 'Research & Analysis Complete'}
+                            </span>
+                            <span>{loading ? `${progress}%` : '100%'}</span>
+                        </div>
+                        <div style={{
+                            height: '10px',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: '5px',
+                            overflow: 'hidden'
+                        }}>
+                            <div style={{
+                                width: `${loading ? progress : 100}%`,
+                                height: '100%',
+                                background: loading
+                                    ? 'linear-gradient(90deg, var(--primary-color), var(--secondary-color))'
+                                    : '#10b981', // Explicit Green
+                                transition: 'width 0.5s ease-out',
+                                boxShadow: loading ? 'none' : '0 0 10px rgba(16, 185, 129, 0.5)'
+                            }} />
+                        </div>
+                    </div>
+                )}
+
                 {error && <div className="error-message">{error}</div>}
 
-                {results && (
+                {results && !loading && (
                     <div className="results-container">
                         <div className="stats-panel">
                             <div className="stat-card">

@@ -56,6 +56,7 @@ def fetch_papers(keyword, limit=50):
 
         # 2. Fetch Details in Batches
         # Processing in chunks prevents the 'Response too large' error
+        seen_pmids = set()
         for i in range(0, len(id_list), BATCH_SIZE):
             chunk = id_list[i:i + BATCH_SIZE]
             
@@ -66,12 +67,20 @@ def fetch_papers(keyword, limit=50):
                 
                 for article in records['PubmedArticle']:
                     try:
-                        citation = article['MedlineCitation']['Article']
-                        title = citation.get('ArticleTitle', 'No Title')
+                        citation = article['MedlineCitation']
+                        
+                        # 1. Identify Uniqueness (PMID)
+                        pmid = str(citation['PMID'])
+                        if pmid in seen_pmids:
+                            continue
+                        seen_pmids.add(pmid)
+
+                        article_data = citation['Article']
+                        title = article_data.get('ArticleTitle', 'No Title')
                         
                         # Robust Abstract Extraction
                         # Handles cases where abstract is a list (structured) or string (unstructured)
-                        abstract_raw = safe_get(citation, ['Abstract', 'AbstractText'], [])
+                        abstract_raw = safe_get(article_data, ['Abstract', 'AbstractText'], [])
                         if isinstance(abstract_raw, list):
                             abstract = " ".join([str(x) for x in abstract_raw])
                         else:
@@ -79,7 +88,7 @@ def fetch_papers(keyword, limit=50):
 
                         # Logic: Only keep papers with substantial content
                         if abstract and len(abstract) > 50: 
-                            papers.append({"title": title, "abstract": abstract})
+                            papers.append({"pmid": pmid, "title": title, "abstract": abstract})
                             
                     except Exception:
                         continue # Skip malformed records silently
@@ -88,7 +97,7 @@ def fetch_papers(keyword, limit=50):
                 logger.error(f"Batch fetch failed: {e}")
                 time.sleep(1) # Polite backoff
                 
-        logger.info(f"✅ Successfully extracted {len(papers)} valid abstracts.")
+        logger.info(f"✅ Successfully extracted {len(papers)} unique, valid abstracts.")
         return papers
 
     except Exception as e:
