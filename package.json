@@ -3,12 +3,12 @@
     "version": "1.0.0",
     "description": "Root package to run both backend and frontend",
     "scripts": {
-        "server": "cd backend && python -u main.py",
+        "server": "cd backend && ..\\venv\\Scripts\\python.exe -u main.py",
         "start": "npm run dev:all",
         "client": "npm start --prefix frontend",
         "dev:all": "concurrently --raw \"npm run server\" \"npm run client\""
     },
     "devDependencies": {
-        "concurrently": "^9.1.0"
+        "concurrently": "^9.2.1"
     }
 }

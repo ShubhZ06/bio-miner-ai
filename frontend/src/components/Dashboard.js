@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import GraphPage from './GraphPage';
 import DataPage from './DataPage';
@@ -13,6 +13,8 @@ function Dashboard() {
     const [results, setResults] = useState(null);
     const [error, setError] = useState(null);
 
+    const abortControllerRef = useRef(null);
+
     // Auto-search if query param exists or state is passed
     useEffect(() => {
         if (location.state?.searchQuery) {
@@ -23,8 +25,26 @@ function Dashboard() {
         }
     }, [location.state]);
 
+    const handleCancel = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+        setLoading(false);
+        setProgressStage('Scan cancelled');
+        setError(null);
+    };
+
     const handleScan = async () => {
         if (!virusName) return;
+
+        // Cancel previous request if any
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
 
         setLoading(true);
         setError(null);
@@ -33,7 +53,10 @@ function Dashboard() {
         setProgressStage('Initializing...');
 
         try {
-            const response = await fetch(`http://localhost:8000/scan/${virusName}?limit=${limit}`);
+            const response = await fetch(`http://localhost:8000/scan/${virusName}?limit=${limit}`, {
+                signal: controller.signal
+            });
+
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
 
@@ -67,9 +90,17 @@ function Dashboard() {
             }
 
         } catch (err) {
+            if (err.name === 'AbortError') {
+                console.log('Fetch aborted');
+                setLoading(false);
+                setProgressStage('Cancelled');
+                return;
+            }
             setError("Failed to connect to backend. Is it running?");
             console.error(err);
             setLoading(false);
+        } finally {
+            abortControllerRef.current = null;
         }
     };
 
@@ -118,6 +149,19 @@ function Dashboard() {
                     <button onClick={handleScan} disabled={loading || !virusName}>
                         {loading ? 'Scanning...' : 'Start Analysis'}
                     </button>
+
+                    {loading && (
+                        <button
+                            onClick={handleCancel}
+                            style={{
+                                background: 'rgba(239, 68, 68, 0.2)',
+                                color: '#fca5a5',
+                                border: '1px solid #ef4444'
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    )}
                 </div>
 
                 {/* Progress Bar Area - Visible during loading OR when results exist */}
