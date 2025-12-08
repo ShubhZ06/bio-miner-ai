@@ -169,8 +169,7 @@ const GraphViz = ({ virusName }) => {
                             }
                         }
                     }}
-                    linkDirectionalArrowLength={4}
-                    linkDirectionalArrowRelPos={1}
+
                     backgroundColor="#f8fafc" // Slate 50
                     onNodeClick={node => {
                         // Center view on node
