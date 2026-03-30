@@ -5,7 +5,7 @@ echo =========================
 
 :: Start Backend in a new window
 echo Starting Backend Server...
-start "Bio-Miner Backend" cmd /k "cd backend && python main.py"
+start "Bio-Miner Backend" cmd /k "cd backend && ..\venv\Scripts\activate && python main.py"
 
 :: Wait a moment for backend to initialize
 timeout /t 5 /nobreak >nul
